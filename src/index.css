@@ -1,0 +1,16 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', 'Arimo',
+    'Open Sans', sans-serif;
+}
+
+@font-face {
+  font-family: 'WoltFont';
+  src:
+    local('Woltfont'),
+    url('./fonts/Woltfont/OmnesLatin-Bold.woff2') format('woff2');
+  font-weight: bold;
+}
+
+body {
+  background-color: black;
+}

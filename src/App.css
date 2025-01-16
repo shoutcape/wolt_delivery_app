@@ -1,0 +1,106 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  color: white;
+}
+
+h1 {
+  font-family: "Woltfont";
+}
+
+.app-container {
+  width: 17rem;
+  aspect-ratio: 0.8;
+  background-color: #2d2d2d;
+  border-radius: 20px;
+  justify-self: center;
+  padding: 2rem;
+}
+
+.calculator-form {
+  display: flex;
+  align-items: start;
+  flex-direction: column;
+  gap: 20px;
+
+  button {
+    padding: 1rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    margin-inline-start: 1rem;
+    background-color: #1e3742;
+    font-weight: 600;
+    color: #009de0;
+    border: none;
+    transition: background-color 0.1s ease;
+  }
+
+  button:hover {
+    background-color: #1b4151;
+  }
+  button:active {
+    background-color: #184a60;
+  }
+
+  p {
+    margin-inline-start: 2rem;
+    font-size: 1rem;
+    text-align: start;
+  }
+
+  input{
+    transition: outline 0.2s ease;
+  }
+  input:hover {
+    outline: 3px solid #009de0;
+  }
+  input:focus {
+    outline: 3px solid #009de0;
+  }
+}
+
+.form-item {
+  display: flex;
+  gap: 15px;
+  align-self: center;
+  position: relative;
+}
+
+.form-item > label {
+  text-align: left;
+  word-break: break-word;
+  width: 5rem;
+  align-self: center;
+}
+
+.form-item > i {
+  position: absolute;
+  display: block;
+  transform: translate(0, -50%);
+  top: 50%;
+  pointer-events: none;
+  text-align: center;
+  align-self: center;
+  width: 3rem;
+  right: 0;
+}
+
+.form-item > input {
+  border-radius: 8px;
+  border: none;
+  height: 2.5rem;
+  max-width: 7rem;
+  padding-inline: 10px;
+  outline: 3px solid #505050;
+  background-color: transparent;
+  color: white;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outerr-spin-button {
+  -webkit-appearance: none;
+}
+
+
