@@ -7,7 +7,7 @@
   font-family: 'WoltFont';
   src:
     local('Woltfont'),
-    url('./fonts/Woltfont/OmnesLatin-Bold.woff2') format('woff2');
+    url('/fonts/Woltfont/OmnesLatin-Bold.woff2') format('woff2');
   font-weight: bold;
 }
 

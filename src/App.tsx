@@ -1,118 +1,119 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import './App.css';
+import OrderForm from './components/OrderForm';
+import OrderBreakdown from './components/OrderBreakdown';
+import { calculateDeliveryDistance, calculateDeliveryFee, calculateSmallOrderSurcharge, calculateTotalPrice, fetchVenueData } from './utils';
+import { toast, ToastContainer } from 'react-toastify';
+import { FormData, ResultData } from './types';
 
 const App = () => {
-  //for up to 1km the deliveryfee is 2€
-  const [deliveryFee, setDeliveryFee] = useState<number>(2);
 
-  useEffect(() => {
-    console.log('deliveryfee:', deliveryFee);
-  }, [deliveryFee]);
+  const [formData, setFormData] = useState<FormData>({
+    userLocation: null,
+    cartValue: 0,
+    venueSlug: null,
+  });
 
-  const calculateFee = (
-    cartValue: number,
-    distance: number,
-    amountOfItems: number,
-    time: Date,
-  ) => {
-    let extraDistanceFee = 0;
-    let deliveryFeeCalculation = 2;
-    const dateTime = new Date(time);
-    const day = dateTime.getDay();
-    const hour = dateTime.getHours();
+  const [resultData, setResultData] = useState<ResultData>({
+    cartValue: 0,
+    deliveryFee: 0,
+    smallOrderSurcharge: 0,
+    deliveryDistance: null,
+    totalPrice: null,
+  });
 
-    //process decimals in integers to avoid floating point errors
-    const cartValueInCents = cartValue * 100;
-    let surcharge = 0;
 
-    //surcharge for orders under 10€
-    if (cartValueInCents < 1000) {
-      surcharge = (1000 - cartValueInCents) / 100;
-    }
+  const handleChange = (event: React.ChangeEvent<HTMLFormElement>) => {
+    const {name, type, value} = event.target
+    const parsedValue = type ==='number' ?
+    parseFloat(value): value
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: parsedValue
+    }))
+  }
 
-    //for each 500m after 1000m add 1€ extraDistanceFee
-    if (distance > 1000) {
-      extraDistanceFee = Math.ceil((distance - 1000) / 500);
-      deliveryFeeCalculation += extraDistanceFee;
-      console.log('extradistancefee', extraDistanceFee);
-    }
-
-    //surcharge of 0.5€ for each item after 5 items including the fifth. item 13 and after is 1.2€ per item
-    if (amountOfItems >= 5) {
-      const extraCostAmount = amountOfItems - 4;
-      surcharge += 0.5 * extraCostAmount;
-    }
-
-    //extra bulk fee for orders of 13 items or more
-    if (amountOfItems >= 13) {
-      const extraBulkFee = 1.2;
-      surcharge += extraBulkFee;
-    }
-
-    //add possible surcharge to deliveryFeeCalculation
-    deliveryFeeCalculation += surcharge;
-
-    //check if rush hour on a friday
-    if (day == 5 && hour >= 15 && hour <= 23) {
-      deliveryFeeCalculation = deliveryFeeCalculation * 1.2;
-    }
-
-    //set max amount for deliveryFee
-    if (deliveryFeeCalculation >= 15) {
-      deliveryFeeCalculation = 15;
-    }
-
-    //free delivery for orders above 100€
-    if (cartValue >= 100) {
-      deliveryFeeCalculation = 0;
-    }
-
-    deliveryFeeCalculation = parseFloat(deliveryFeeCalculation.toFixed(2));
-
-    //set deliveryFee state
-    setDeliveryFee(deliveryFeeCalculation);
-
-  };
-
-  const handlesubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const form = event.target as HTMLFormElement;
-    const cartValue = parseFloat(form.cartValue.value);
-    const distance = parseFloat(form.distance.value);
-    const amountOfItems = parseFloat(form.amountOfItems.value);
-    const time = form.time.value;
-    calculateFee(cartValue, distance, amountOfItems, time);
+
+    if (!formData.venueSlug || formData.venueSlug == '') {
+      toast.warn('No venue slug given');
+      return;
+    }
+
+    if (!formData.cartValue) {
+      toast.warn('No cart value given');
+      return;
+    }
+
+    if (!formData.userLocation) {
+      toast.warn('No user location value given');
+      return;
+    }
+
+    let staticData 
+    let dynamicData
+
+    try {
+      staticData = await fetchVenueData(formData.venueSlug, 'static');
+      dynamicData = await fetchVenueData(formData.venueSlug, 'dynamic');
+      console.log(staticData, dynamicData)
+    } catch (error) {
+      toast.warn('Incorrect venue slug');
+      return;
+    }
+
+    const cartValueInCents = formData.cartValue * 100
+    const deliveryDistance = calculateDeliveryDistance(formData.userLocation, staticData?.venueCoords)
+    const smallOrderSurcharge = calculateSmallOrderSurcharge(cartValueInCents, dynamicData?.order_minimum_no_surcharge)
+    const deliveryFee = calculateDeliveryFee(dynamicData?.base_price,dynamicData?.distance_ranges,deliveryDistance)
+    const totalPrice = calculateTotalPrice(cartValueInCents,smallOrderSurcharge,deliveryFee)
+
+    setResultData({
+      cartValue: cartValueInCents,
+      deliveryFee: deliveryFee,
+      smallOrderSurcharge: smallOrderSurcharge,
+      deliveryDistance: deliveryDistance,
+      totalPrice: totalPrice,
+    })
+    toast.success('Price calculated successfully')
   };
+
+  const getLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setFormData((prevData) => ({
+          ...prevData,
+          userLocation: {
+            Latitude: position.coords.latitude,
+            Longitude: position.coords.longitude,
+          },
+        }));
+      });
+    }
+  };
+
 
   return (
     <>
       <h1>Wolt Delivery Fee Calculator</h1>
       <div className='app-container'>
-        <form className='calculator-form' onSubmit={handlesubmit}>
-          <div className='form-item'>
-            <label>Cart Value</label>
-            <input type='number' step='.01' id='cartValue' placeholder='0.0'  />
-            <i>€</i>
-          </div>
-          <div className='form-item'>
-            <label>Delivery Distance</label>
-            <input type='number' id='distance' placeholder='0' />
-            <i>m</i>
-          </div>
-          <div className='form-item'>
-            <label>Amount of items</label>
-            <input type='number' id='amountOfItems' placeholder='0'/>
-          </div>
-          <div className='form-item'>
-            <label>Time</label>
-            <input type='datetime-local' id='time'/>
-          </div>
-          <div>
-            <button type='submit'>Calculate delivery price</button>
-            <p>Delivery price: <span>{deliveryFee}</span>€</p>
-          </div>
-        </form>
+        <OrderForm
+          handleSubmit={handleSubmit}
+          handleChange={handleChange}
+          getLocation={getLocation}
+          userLocation={formData.userLocation}
+        />
+        <h1>Price breakdown</h1>
+        <OrderBreakdown
+          cartValue={resultData.cartValue}
+          deliveryFee={resultData.deliveryFee}
+          deliveryDistance={resultData.deliveryDistance}
+          smallOrderSurcharge={resultData.smallOrderSurcharge}
+          totalPrice={resultData.totalPrice}
+        />
       </div>
+      <ToastContainer />
     </>
   );
 };
